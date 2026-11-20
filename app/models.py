@@ -39,6 +39,7 @@ class Question(db.Model):
     option_c = db.Column(db.String(100), nullable=False)
     option_d = db.Column(db.String(100), nullable=False)
     correct_option = db.Column(db.String(1), nullable=False)
+    explanation = db.Column(db.Text, nullable=False, default="")
 
     def to_dict(self):
         # The correct answer is not included on purpose

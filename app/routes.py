@@ -111,6 +111,7 @@ def add_question(quiz_id):
     text = get_text(data, "text")
     options = [get_text(data, "option_" + letter) for letter in "abcd"]
     correct_option = get_text(data, "correct_option")
+    explanation = get_text(data, "explanation")
     if not text or "" in options:
         return error("Question text and all 4 options are required", 400)
     if correct_option not in OPTIONS:
@@ -124,11 +125,35 @@ def add_question(quiz_id):
         option_c=options[2],
         option_d=options[3],
         correct_option=correct_option,
+        explanation=explanation,
     )
     db.session.add(question)
     db.session.commit()
     return jsonify(question.to_dict()), 201
 
+@api.route("/quizzes/<int:quiz_id>/questions/<int:question_id>/check", methods=["POST"])
+def check_practice_answer(quiz_id, question_id):
+    quiz = db.session.get(Quiz, quiz_id)
+    if quiz is None:
+        return error("Quiz not found", 404)
+
+    question = db.session.get(Question, question_id)
+    if question is None or question.quiz_id != quiz.id:
+        return error("Question not found in this quiz", 404)
+
+    data = request.get_json(silent=True) or {}
+    answer = get_text(data, "answer")
+
+    if answer not in OPTIONS:
+        return error("answer must be A, B, C or D", 400)
+
+    is_correct = answer == question.correct_option
+
+    return jsonify({
+        "correct": is_correct,
+        "correct_option": question.correct_option,
+        "explanation": question.explanation,
+    })
 
 @api.route("/quizzes/<int:quiz_id>/submit", methods=["POST"])
 @limiter.limit(lambda: current_app.config["SUBMIT_RATE_LIMIT"])
